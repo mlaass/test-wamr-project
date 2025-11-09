@@ -1,0 +1,22 @@
+{
+  "files.associations": {
+    "*.page-template": "vue",
+    "*.layout-template": "vue",
+    "*.vue": "vue",
+    "*.cl": "opencl",
+    "*.j2": "jinja-html",
+    "*.xml": "xml",
+    "*.py": "python",
+    "*.html": "html",
+    "*.el": "plaintext",
+    "*.json5": "json",
+    "*.fs": "fsharp",
+    "istream": "cpp",
+    "ostream": "cpp",
+    "*.tcc": "cpp",
+    "algorithm": "cpp",
+    "memory": "cpp",
+    "sstream": "cpp"
+  },
+  "python.languageServer": "None"
+}
