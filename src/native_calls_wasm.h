@@ -1,8 +1,8 @@
 // Auto-generated from native_calls.wasm
 // WASM module size: 1485 bytes
 
-#ifndef NATIVE_CALLS_H
-#define NATIVE_CALLS_H
+#ifndef NATIVE_CALLS_WASM_H
+#define NATIVE_CALLS_WASM_H
 
 const unsigned char native_calls_wasm[] = {
     0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x22, 0x07, 0x60,
@@ -132,4 +132,4 @@ const unsigned char native_calls_wasm[] = {
 };
 const unsigned int native_calls_wasm_len = 1485;
 
-#endif // NATIVE_CALLS_H
+#endif // NATIVE_CALLS_WASM_H

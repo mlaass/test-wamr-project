@@ -43,6 +43,7 @@ fi
 CLANG="$WASI_SDK/bin/clang"
 WASM2WAT="wasm2wat"
 WASM_OBJDUMP="wasm-objdump"
+WAMRC="wamrc"
 
 # Directories
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -53,12 +54,31 @@ HEADER_DIR="$SCRIPT_DIR/../src"
 # Python script for header generation
 WASM_TO_HEADER="../wasm_to_header.py"
 
+# Flags
+BUILD_AOT=true
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --aot)
+            BUILD_AOT=true
+            shift
+            ;;
+        *)
+            echo -e "${RED}Unknown option: $1${NC}"
+            echo "Usage: $0 [--aot]"
+            exit 1
+            ;;
+    esac
+done
+
 echo -e "${GREEN}WASM Build Script${NC}"
 echo "==============================================="
 echo "WASI SDK: $WASI_SDK"
 echo "Source:   $SRC_DIR"
 echo "Output:   $OUTPUT_DIR"
 echo "Headers:  $HEADER_DIR"
+echo "Build AOT: $BUILD_AOT"
 echo ""
 
 # ============================================================================
@@ -127,6 +147,60 @@ inspect_wasm() {
     fi
 }
 
+compile_aot() {
+    local wasm_file=$1
+    local output_name=$2
+    local target=$3
+    local target_abi=$4
+
+    echo -e "${YELLOW}Compiling AOT for $target...${NC}"
+
+    # Check if wamrc is available
+    if ! command -v $WAMRC &> /dev/null; then
+        echo -e "${RED}✗ wamrc not found in PATH${NC}"
+        echo "Please install wamrc or add it to PATH"
+        return 1
+    fi
+
+    # Compile WASM to AOT
+    $WAMRC --target=$target --target-abi=$target_abi \
+        -o "$OUTPUT_DIR/${output_name}.aot" \
+        "$OUTPUT_DIR/${wasm_file}.wasm"
+
+    if [ $? -eq 0 ]; then
+        local size=$(stat -f%z "$OUTPUT_DIR/${output_name}.aot" 2>/dev/null || stat -c%s "$OUTPUT_DIR/${output_name}.aot")
+        echo -e "${GREEN}✓ Compiled AOT: ${output_name}.aot ($size bytes)${NC}"
+    else
+        echo -e "${RED}✗ Failed to compile AOT for $target${NC}"
+        return 1
+    fi
+}
+
+generate_aot_header() {
+    local aot_file=$1
+    local output_name=$2
+    local array_name=$3
+
+    echo -e "${YELLOW}Generating header for $aot_file...${NC}"
+
+    if [ -f "$WASM_TO_HEADER" ]; then
+        python3 "$WASM_TO_HEADER" \
+            "$OUTPUT_DIR/${aot_file}.aot" \
+            "$HEADER_DIR/${output_name}.h" \
+            "${array_name}"
+
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✓ Generated: ${output_name}.h${NC}"
+        else
+            echo -e "${RED}✗ Failed to generate AOT header${NC}"
+            return 1
+        fi
+    else
+        echo -e "${YELLOW}Warning: wasm_to_header.py not found${NC}"
+        return 1
+    fi
+}
+
 # ============================================================================
 # Build WASM Modules
 # ============================================================================
@@ -147,6 +221,26 @@ generate_header "native_calls" "native_calls_wasm"
 inspect_wasm "native_calls"
 
 echo ""
+
+# ============================================================================
+# AOT Compilation (optional, RISC-V only)
+# ============================================================================
+
+if [ "$BUILD_AOT" = true ]; then
+    echo "Building AOT modules for RISC-V..."
+    echo "-------------------------------------------"
+
+    # Compile benchmark.wasm to AOT for RISC-V
+    compile_aot "benchmark" "benchmark_riscv" "riscv32" "ilp32d"
+    if [ $? -eq 0 ]; then
+        generate_aot_header "benchmark_riscv" "benchmark_aot_riscv" "benchmark_aot_riscv"
+    fi
+
+    echo ""
+    echo -e "${YELLOW}Note: AOT compilation for Xtensa is currently broken (LLVM backend issue)${NC}"
+    echo ""
+fi
+
 echo -e "${GREEN}===============================================${NC}"
 echo -e "${GREEN}Build completed successfully!${NC}"
 echo ""
@@ -155,6 +249,12 @@ echo "  - $OUTPUT_DIR/benchmark.wasm"
 echo "  - $OUTPUT_DIR/native_calls.wasm"
 echo "  - $HEADER_DIR/benchmark_wasm.h"
 echo "  - $HEADER_DIR/native_calls_wasm.h"
+
+if [ "$BUILD_AOT" = true ]; then
+    echo "  - $OUTPUT_DIR/benchmark_riscv.aot"
+    echo "  - $HEADER_DIR/benchmark_aot_riscv.h"
+fi
+
 echo ""
 echo "Next steps:"
 echo "  1. Include headers in your main.cpp"

@@ -1,8 +1,8 @@
 // Auto-generated from benchmark.wasm
 // WASM module size: 5328 bytes
 
-#ifndef BENCHMARK_H
-#define BENCHMARK_H
+#ifndef BENCHMARK_WASM_H
+#define BENCHMARK_WASM_H
 
 const unsigned char benchmark_wasm[] = {
     0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x21, 0x06, 0x60,
@@ -452,4 +452,4 @@ const unsigned char benchmark_wasm[] = {
 };
 const unsigned int benchmark_wasm_len = 5328;
 
-#endif // BENCHMARK_H
+#endif // BENCHMARK_WASM_H
